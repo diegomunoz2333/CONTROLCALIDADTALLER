@@ -56,21 +56,40 @@ sigma0_196 <- q_c_196$std.dev
 cat("k=1.96 | mu0:", round(mu0_196,5), "| sigma0:", round(sigma0_196,5), "\n")
 
 
-# d) Comparación de límites entre los dos alphas DE ACA PARA ABAJO ESTOY 0 SEGURA
+# d) Curvas Características de Operación (CO) - ambas en la misma gráfica
+n <- 4  # tamaño de subgrupo
 
+# Función beta (probabilidad de no detectar un desplazamiento delta)
+beta_co <- function(delta, k, n) {
+  pnorm(k - delta * sqrt(n)) - pnorm(-k - delta * sqrt(n))
+}
 
-q_xbar_196 <- qcc(datos[,-1], type = "xbar", nsigmas = 1.96,
-                  title = "Carta de Control para la Media (k=1.96)")
+# Rango de desplazamientos a evaluar (en múltiplos de sigma)
+delta_seq <- seq(0, 4, by = 0.01)
 
-cat("\n--- Límites Carta X̄ con α=0.0027 (k=3) ---\n")
-cat("LCI:", round(q_xbar_3$limits[1], 4), "\n")
-cat("LCS:", round(q_xbar_3$limits[2], 4), "\n")
+# Beta para cada carta
+beta_k3   <- beta_co(delta_seq, k = 3,    n = n)
+beta_k196 <- beta_co(delta_seq, k = 1.96, n = n)
 
-cat("\n--- Límites Carta X̄ con α=0.05 (k=1.96) ---\n")
-cat("LCI:", round(q_xbar_196$limits[1], 4), "\n")
-cat("LCS:", round(q_xbar_196$limits[2], 4), "\n")
+# Graficar las dos curvas juntas
+plot(delta_seq, beta_k3,
+     type = "l", col = "blue", lwd = 2,
+     xlab = expression(delta ~ "(desplazamiento en múltiplos de " * sigma[0] * ")"),
+     ylab = expression(beta ~ "(Probabilidad de No Detectar)"),
+     main = "Curvas Características de Operación - Carta X\u0305",
+     ylim = c(0, 1))
 
+grid(col = "gray85", lty = 3)
 
+lines(delta_seq, beta_k196, col = "red", lwd = 2, lty = 2)
+
+legend("topright",
+       legend = c("alpha = 0.0027 (k=3)",
+                  "alpha = 0.05 (k=1.96)"),
+       col  = c("blue", "red"),
+       lty  = c(1, 2),
+       lwd  = 2,
+       bty  = "n")
 # e) Curvas de Operación (CO) y condiciones de operación
 # Desplazamiento: media sube 1.4% sobre mu0
 
