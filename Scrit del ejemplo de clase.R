@@ -1,4 +1,4 @@
-#------------------------------------------------------#
+#--SCRIPT DE LOS EJMPLOS EN CLASE-------------#
 #-- Universidad del Valle                            --#
 #-- Asignatura: Control de Calidad                   --#
 #-- Profesor: Ivan Mauricio Bermudez Vera            --#
