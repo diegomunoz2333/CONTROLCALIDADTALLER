@@ -6,8 +6,6 @@
 
 library(qcc)
 
-# PASO 1: Leer datos del portapapeles
-
 datos <- read.table("clipboard", header=TRUE, dec=",")
 
 head(datos)
@@ -30,8 +28,7 @@ q_xR   <- qcc(datos[,-1], type = "R", nsigmas = 1.96,
               title = "Carta de Control para el Rango")
 
 # c) Estimación de parámetros del proceso
-# Solo van las muestras en control (iteración hasta 0 puntos fuera)
-
+# Solo van las muestras en control (iteraciones hasta 0 puntos fuera)
 
 # Carta k=3 
 # Fuera de control: muestras 32,33,34,35,36,37 (6 puntos rojos carta X̄)
@@ -73,11 +70,9 @@ cat("\n--- Límites Carta X̄ con α=0.05 (k=1.96) ---\n")
 cat("LCI:", round(q_xbar_196$limits[1], 4), "\n")
 cat("LCS:", round(q_xbar_196$limits[2], 4), "\n")
 
-#=====================================================#
 
 # e) Curvas de Operación (CO) y condiciones de operación
 # Desplazamiento: media sube 1.4% sobre mu0
-#=====================================================#
 
 n <- ncol(datos) - 1   # tamaño de subgrupo = 4
 
