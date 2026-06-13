@@ -1,11 +1,5 @@
 library(qcc)
 
-# ============================================================
-# Taller 6 - Analisis de Capacidad de Proceso
-# Se continua desde el codigo del Taller 5
-# ============================================================
-
-# --- Datos y objetos qcc del Taller 5 (copiar desde ese script) ---
 
 datos <- read.table("clipboard", header = TRUE, dec = ",")
 
@@ -19,7 +13,6 @@ datos_k196 <- datos[-fuera_k196, ]
 q_c_196    <- qcc(datos_k196[,-1], type = "xbar", nsigmas = 1.96,
                   title = "Parametros k=1.96 (iteracion final)", plot = FALSE)
 
-# Parametros estimados
 mu0_k3     <- q_c_k3$center
 sigma0_k3  <- q_c_k3$std.dev
 mu0_196    <- q_c_196$center
@@ -28,10 +21,6 @@ sigma0_196 <- q_c_196$std.dev
 LIE <- 6
 LSE <- 12
 N   <- (LIE + LSE) / 2   # valor nominal = 9
-
-# ============================================================
-# a. Porcentaje de unidades que NO cumple especificaciones
-# ============================================================
 
 cat("=== a. Porcentaje fuera de especificaciones ===\n\n")
 
@@ -53,9 +42,6 @@ for (caso in list(
               p_total, p_total * 100, p_total * 1e6))
 }
 
-# ============================================================
-# b. Porcentaje consumiendo avenas crudas (X > LSE = 12%)
-# ============================================================
 
 cat("=== b. Usuarios consumiendo avenas crudas (X > 12%) ===\n\n")
 
@@ -72,9 +58,6 @@ for (caso in list(
               p_sup, p_sup * 100, p_sup * 1e6))
 }
 
-# ============================================================
-# c. Indices de capacidad a corto plazo
-# ============================================================
 
 cat("=== c. Indices de capacidad a corto plazo ===\n\n")
 
@@ -103,8 +86,6 @@ for (caso in list(
   cat(sprintf("    Cpm = (LSE-LIE)/(6*sqrt(s^2+(mu-N)^2))  = %.4f\n\n", Cpm))
 }
 
-# --- Verificacion con qcc::process.capability ---
-
 cat("  Verificacion con process.capability() — k=3\n")
 pc_k3 <- process.capability(q_c_k3,
                             spec.limits = c(LIE, LSE),
@@ -117,9 +98,6 @@ pc_k196 <- process.capability(q_c_196,
                               target      = N,
                               nsigmas     = 3)
 
-# ============================================================
-# d. Conclusion: es capaz el proceso a corto plazo?
-# ============================================================
 
 cat("\n=== d. Conclusion: ¿El proceso es capaz a corto plazo? ===\n\n")
 
@@ -147,3 +125,4 @@ for (caso in list(
 cat("  Nota: el problema no es exceso de variabilidad (Cp > 1) sino descentramiento\n")
 cat("  de la media (~9.95%) respecto al nominal (9%). Recentrar el proceso reduciria\n")
 cat("  los no conformes de ~0.80% a ~0.03% sin tocar la variabilidad.\n")
+
