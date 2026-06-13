@@ -90,59 +90,305 @@ legend("topright",
        lty  = c(1, 2),
        lwd  = 2,
        bty  = "n")
-# e) Curvas de Operación (CO) y condiciones de operación
-# Desplazamiento: media sube 1.4% sobre mu0
+# =============================================================================
+# TALLER 5 – GRÁFICOS DE CONTROL POR VARIABLES
+# Parte 2: Condiciones de Operación del Gráfico
+# Valery Rivera Lopez – Diego Fernando Muñoz Portela
+# Prof. Ivan Mauricio Bermudez Vera | Ingeniería Industrial – Univalle
+# =============================================================================
 
-n <- ncol(datos) - 1   # tamaño de subgrupo = 4
+# -----------------------------------------------------------------------------
+# FUNCIONES BASE (template del profesor)
+# -----------------------------------------------------------------------------
 
-# Función potencia para carta X̄
-potencia <- function(delta, k, n) {
-  1 - (pnorm(k - delta * sqrt(n)) - pnorm(-k - delta * sqrt(n)))
+# Probabilidad de detectar un desplazamiento de delta sigmas en la media
+potencia <- function(n, delta, alpha) {
+  z      <- -qnorm(alpha / 2)          # z_alpha/2  (valor positivo)
+  p      <- 1 - (pnorm(z - delta * sqrt(n)) - pnorm(-z - delta * sqrt(n)))
+  return(p)
 }
 
-# Rango de deltas a graficar
-delta_seq <- seq(0, 4, by = 0.1)
+# Límites de control de la carta X-barra
+LControl <- function(n, alpha, mu0, sigma0) {
+  z      <- -qnorm(alpha / 2)
+  LCS    <- mu0 + z * sigma0 / sqrt(n)
+  LCI    <- mu0 - z * sigma0 / sqrt(n)
+  Limites <- c(LCI, LCS)
+  names(Limites) <- c("LCI", "LCS")
+  return(Limites)
+}
 
-beta_3   <- 1 - potencia(delta_seq, k = 3,    n = n)
-beta_196 <- 1 - potencia(delta_seq, k = 1.96, n = n)
+# =============================================================================
+# PARÁMETROS DEL PROCESO (obtenidos en ítem c – fase de instalación depurada)
+# =============================================================================
+# CASO 1 – alpha = 0.0027  (k = 3)
+#   31 muestras en control tras eliminar subgrupos 32–37
+mu0_1    <- 9.953611
+sigma0_1 <- 0.8516857
+n        <- 4          # tamaño de subgrupo (común a ambos casos)
 
-# Graficar las dos curvas CO juntas
-plot(delta_seq, beta_3,
-     type = "l", col = "steelblue", lwd = 2,
-     xlab = expression(delta ~ "(múltiplos de " * sigma[0] * ")"),
-     ylab = expression(beta ~ "(Error Tipo II)"),
-     main = "Curvas Características de Operación (CO) - Carta X̄",
-     ylim = c(0, 1))
-lines(delta_seq, beta_196, col = "firebrick", lwd = 2, lty = 2)
-legend("topright",
-       legend = c("α=0.0027 (k=3)", "α=0.05 (k=1.96)"),
+# CASO 2 – alpha = 0.05  (k = 1.96)
+#   27 muestras en control tras 3 iteraciones (eliminados 5, 12, 28, 31–37)
+mu0_2    <- 9.958425
+sigma0_2 <- 0.8302513
+
+# Cambio en la media a detectar
+cambio   <- 1.4        # 1.4 % de humedad hacia arriba
+
+# Delta expresado en múltiplos de sigma_0 (unidades que exige la fórmula)
+delta_1  <- cambio / sigma0_1   # = 1.4 / 0.8517 ≈ 1.6438 sigmas
+delta_2  <- cambio / sigma0_2   # = 1.4 / 0.8303 ≈ 1.6861 sigmas
+
+alpha_1  <- 0.0027
+alpha_2  <- 0.05
+
+# =============================================================================
+# ÍTEM e – Probabilidad de detectar el cambio de 1.4 % en la PRIMERA muestra
+# =============================================================================
+# P(detección) = potencia = 1 – β  en una sola muestra
+p1 <- potencia(n = n, delta = delta_1, alpha = alpha_1)
+p2 <- potencia(n = n, delta = delta_2, alpha = alpha_2)
+
+cat("============================================================\n")
+cat("  ÍTEM e – Potencia (prob. de detectar en 1.ª muestra)\n")
+cat("============================================================\n")
+cat(sprintf("  Caso 1 (alpha=0.0027, k=3):   delta=%.4f sigmas  -->  potencia = %.4f  (%.2f %%)\n",
+            delta_1, p1, p1 * 100))
+cat(sprintf("  Caso 2 (alpha=0.05,   k=1.96): delta=%.4f sigmas  -->  potencia = %.4f  (%.2f %%)\n\n",
+            delta_2, p2, p2 * 100))
+
+# =============================================================================
+# ÍTEM f – Probabilidad de detección EXACTAMENTE en la 4.ª muestra
+# =============================================================================
+# Distribución geométrica: P(X = k) = (1–p)^(k–1) * p
+# k = 4 → P(X=4) = (1–p)^3 * p
+
+k_muestra <- 4
+P_f1 <- (1 - p1)^(k_muestra - 1) * p1
+P_f2 <- (1 - p2)^(k_muestra - 1) * p2
+
+cat("============================================================\n")
+cat("  ÍTEM f – P(detección exactamente en la 4.ª muestra)\n")
+cat("============================================================\n")
+cat(sprintf("  Caso 1 (alpha=0.0027): P(X=4) = (1-%.4f)^3 * %.4f = %.4f  (%.2f %%)\n",
+            p1, p1, P_f1, P_f1 * 100))
+cat(sprintf("  Caso 2 (alpha=0.05):   P(X=4) = (1-%.4f)^3 * %.4f = %.4f  (%.2f %%)\n\n",
+            p2, p2, P_f2, P_f2 * 100))
+
+# =============================================================================
+# ÍTEM g – ARL₁: muestras esperadas para DETECTAR el cambio
+# =============================================================================
+# Distribución geométrica: E[X] = 1/p
+ARL1_1 <- 1 / p1
+ARL1_2 <- 1 / p2
+
+cat("============================================================\n")
+cat("  ÍTEM g – ARL₁ (muestras esperadas para detectar cambio)\n")
+cat("============================================================\n")
+cat(sprintf("  Caso 1 (alpha=0.0027): ARL₁ = 1/%.4f = %.4f muestras\n", p1, ARL1_1))
+cat(sprintf("  Caso 2 (alpha=0.05):   ARL₁ = 1/%.4f = %.4f muestras\n\n", p2, ARL1_2))
+
+# =============================================================================
+# ÍTEM h – ARL₀: muestras esperadas para emitir una FALSA ALARMA
+# =============================================================================
+# Cuando el proceso está en control: P(falsa alarma) = alpha
+# ARL₀ = 1/alpha
+ARL0_1 <- 1 / alpha_1
+ARL0_2 <- 1 / alpha_2
+
+cat("============================================================\n")
+cat("  ÍTEM h – ARL₀ (muestras esperadas para falsa alarma)\n")
+cat("============================================================\n")
+cat(sprintf("  Caso 1 (alpha=0.0027): ARL₀ = 1/0.0027 = %.2f muestras\n", ARL0_1))
+cat(sprintf("  Caso 2 (alpha=0.05):   ARL₀ = 1/0.05   = %.2f  muestras\n\n", ARL0_2))
+
+# =============================================================================
+# RESUMEN COMPARATIVO – TABLA GENERAL
+# =============================================================================
+cat("============================================================\n")
+cat("  RESUMEN – Métricas de operación comparadas\n")
+cat("============================================================\n")
+cat(sprintf("  %-35s  %10s  %10s\n", "Métrica", "k=3 (0.0027)", "k=1.96 (0.05)"))
+cat(sprintf("  %-35s  %10s  %10s\n", "-----------------------------------",
+            "----------", "----------"))
+cat(sprintf("  %-35s  %10.4f  %10.4f\n", "mu0 estimado",              mu0_1,   mu0_2))
+cat(sprintf("  %-35s  %10.4f  %10.4f\n", "sigma0 estimado",           sigma0_1, sigma0_2))
+cat(sprintf("  %-35s  %10.4f  %10.4f\n", "delta (sigmas)",            delta_1,  delta_2))
+cat(sprintf("  %-35s  %10.4f  %10.4f\n", "e) Potencia (1 muestra)",   p1,       p2))
+cat(sprintf("  %-35s  %10.4f  %10.4f\n", "f) P(detección en 4.ª)",    P_f1,     P_f2))
+cat(sprintf("  %-35s  %10.4f  %10.4f\n", "g) ARL1 (detectar cambio)", ARL1_1,   ARL1_2))
+cat(sprintf("  %-35s  %10.2f  %10.2f\n", "h) ARL0 (falsa alarma)",    ARL0_1,   ARL0_2))
+
+# =============================================================================
+# LÍMITES DE CONTROL (verificación con parámetros depurados)
+# =============================================================================
+cat("\n============================================================\n")
+cat("  LÍMITES DE CONTROL (con parámetros depurados del ítem c)\n")
+cat("============================================================\n")
+lim1 <- LControl(n = n, alpha = alpha_1, mu0 = mu0_1, sigma0 = sigma0_1)
+lim2 <- LControl(n = n, alpha = alpha_2, mu0 = mu0_2, sigma0 = sigma0_2)
+cat(sprintf("  Caso 1 (k=3):    LCI = %.4f   LC = %.4f   LCS = %.4f\n",
+            lim1["LCI"], mu0_1, lim1["LCS"]))
+cat(sprintf("  Caso 2 (k=1.96): LCI = %.4f   LC = %.4f   LCS = %.4f\n",
+            lim2["LCI"], mu0_2, lim2["LCS"]))
+
+# =============================================================================
+# GRÁFICA – Curva de potencia en función del número de muestras acumuladas
+# (probabilidad de haber detectado el cambio en ≤ m muestras)
+# =============================================================================
+m_seq    <- 1:10
+P_acum_1 <- 1 - (1 - p1)^m_seq   # P(detectar en ≤ m muestras) | caso 1
+P_acum_2 <- 1 - (1 - p2)^m_seq   # idem | caso 2
+
+par(mar = c(5, 5, 4, 2))
+plot(m_seq, P_acum_1,
+     type  = "b", pch = 16, col = "steelblue", lwd = 2,
+     ylim  = c(0, 1),
+     xlab  = "Número de muestras (m)",
+     ylab  = "P(detectar el cambio en ≤ m muestras)",
+     main  = "Probabilidad acumulada de detección\nCambio de 1.4 % en la media",
+     las   = 1, xaxt = "n")
+axis(1, at = m_seq)
+lines(m_seq, P_acum_2,
+      type = "b", pch = 17, col = "firebrick", lwd = 2, lty = 2)
+abline(h  = c(0.5, 0.9, 0.99), lty = 3, col = "gray60")
+legend("bottomright",
+       legend = c(expression(alpha == 0.0027 ~ "(k=3)"),
+                  expression(alpha == 0.05   ~ "(k=1.96)")),
        col    = c("steelblue", "firebrick"),
-       lty    = c(1, 2), lwd = 2)
+       lty    = c(1, 2), pch = c(16, 17), lwd = 2,
+       bty    = "n")
 
-# --- Condiciones de operación: desplazamiento del 1.4% ---
-delta_e <- (mu0 * 0.014) / sigma0
+# Parámetros
+n <- 4
+delta_1 <- 1.4 / 0.8517   # 1.6438
+delta_2 <- 1.4 / 0.8303   # 1.6862
 
-cat("\n=== Condiciones de operación (desplazamiento 1.4% de mu0) ===\n")
-cat("Desplazamiento absoluto :", round(mu0 * 0.014, 5), "\n")
-cat("delta (en sigmas)       :", round(delta_e, 4), "\n")
+delta_seq <- seq(0, 4, by = 0.01)
+beta_1 <- pnorm(3    - delta_seq * sqrt(n)) - pnorm(-3    - delta_seq * sqrt(n))
+beta_2 <- pnorm(1.96 - delta_seq * sqrt(n)) - pnorm(-1.96 - delta_seq * sqrt(n))
 
-# α=0.0027 (k=3)
-pot_3  <- potencia(delta_e, k = 3,    n = n)
-ARL1_3 <- 1 / pot_3
+# Beta en el punto específico del cambio de 1.4%
+beta_punto_1 <- pnorm(3    - delta_1 * sqrt(n)) - pnorm(-3    - delta_1 * sqrt(n))
+beta_punto_2 <- pnorm(1.96 - delta_2 * sqrt(n)) - pnorm(-1.96 - delta_2 * sqrt(n))
 
-cat("\n--- α=0.0027 (k=3) ---\n")
-cat("Potencia (1-β) :", round(pot_3, 6), "\n")
-cat("β              :", round(1 - pot_3, 6), "\n")
-cat("ARL0           :", round(1/0.0027, 2), "muestras\n")
-cat("ARL1           :", round(ARL1_3, 4), "muestras\n")
+plot(delta_seq, beta_1,
+     type = "l", col = "steelblue", lwd = 2,
+     ylim = c(0, 1), las = 1,
+     xlab = expression(delta ~ "(desplazamiento en múltiplos de" ~ sigma[0]*")"),
+     ylab = expression(beta ~ "(Probabilidad de No Detectar)"),
+     main = "Curvas CO con desplazamiento de 1.4% marcado")
+lines(delta_seq, beta_2, col = "firebrick", lwd = 2, lty = 2)
 
-# α=0.05 (k=1.96)
-pot_196  <- potencia(delta_e, k = 1.96, n = n)
-ARL1_196 <- 1 / pot_196
+# Líneas verticales en el delta del cambio
+abline(v = delta_1, lty = 3, col = "steelblue")
+abline(v = delta_2, lty = 3, col = "firebrick")
 
-cat("\n--- α=0.05 (k=1.96) ---\n")
-cat("Potencia (1-β) :", round(pot_196, 6), "\n")
-cat("β              :", round(1 - pot_196, 6), "\n")
-cat("ARL0           :", round(1/0.05, 2), "muestras\n")
-cat("ARL1           :", round(ARL1_196, 4), "muestras\n")
+# Puntos sobre las curvas
+points(delta_1, beta_punto_1, pch = 16, col = "steelblue", cex = 1.8)
+points(delta_2, beta_punto_2, pch = 17, col = "firebrick",  cex = 1.8)
 
+# Etiquetas con beta y potencia
+text(delta_1, beta_punto_1 + 0.07,
+     labels = paste0("β=", round(beta_punto_1, 4), "\n(potencia=61.32%)"),
+     col = "steelblue", cex = 0.85, adj = 0)
+text(delta_2, beta_punto_2 + 0.07,
+     labels = paste0("β=", round(beta_punto_2, 4), "\n(potencia=92.11%)"),
+     col = "firebrick", cex = 0.85, adj = 1)
+
+legend("topright",
+       legend = c("α = 0.0027 (k=3)", "α = 0.05 (k=1.96)"),
+       col = c("steelblue", "firebrick"),
+       lty = c(1, 2), lwd = 2, pch = c(16, 17), bty = "n")
+
+p1 <- 0.6132
+p2 <- 0.9211
+k  <- 1:10
+
+P_geo_1 <- (1 - p1)^(k - 1) * p1
+P_geo_2 <- (1 - p2)^(k - 1) * p2
+
+par(mfrow = c(1, 2))
+
+# Caso k=3
+barplot(P_geo_1,
+        names.arg = k,
+        col = ifelse(k == 4, "steelblue", "lightblue"),
+        border = "white",
+        main = expression(alpha == 0.0027 ~ "(k=3)"),
+        xlab = "Muestra de detección (k)",
+        ylab = "P(X = k)",
+        ylim = c(0, 0.7),
+        las = 1)
+text(x = 4 * 1.2 - 0.1, y = P_geo_1[4] + 0.03,
+     labels = paste0("P(X=4)\n= ", round(P_geo_1[4], 4)),
+     col = "steelblue", cex = 0.85)
+
+# Caso k=1.96
+barplot(P_geo_2,
+        names.arg = k,
+        col = ifelse(k == 4, "firebrick", "#f5a9a9"),
+        border = "white",
+        main = expression(alpha == 0.05 ~ "(k=1.96)"),
+        xlab = "Muestra de detección (k)",
+        ylab = "P(X = k)",
+        ylim = c(0, 1),
+        las = 1)
+text(x = 4 * 1.2 - 0.1, y = P_geo_2[4] + 0.04,
+     labels = paste0("P(X=4)\n= ", round(P_geo_2[4], 4)),
+     col = "firebrick", cex = 0.85)
+
+par(mfrow = c(1, 1))
+
+
+
+###############
+p1 <- 0.6132
+p2 <- 0.9211
+m  <- 1:10
+
+P_acum_1 <- 1 - (1 - p1)^m
+P_acum_2 <- 1 - (1 - p2)^m
+
+plot(m, P_acum_1,
+     type = "b", pch = 16, col = "steelblue", lwd = 2,
+     ylim = c(0, 1), las = 1, xaxt = "n",
+     xlab = "Número de muestras (m)",
+     ylab = "P(detectar en ≤ m muestras)",
+     main = "Probabilidad acumulada de detección\nCambio de 1.4% en la media")
+axis(1, at = m)
+lines(m, P_acum_2,
+      type = "b", pch = 17, col = "firebrick", lwd = 2, lty = 2)
+
+# Líneas de referencia
+abline(h = c(0.90, 0.95, 0.99), lty = 3, col = "gray60")
+text(x = 10.2, y = c(0.90, 0.95, 0.99),
+     labels = c("90%", "95%", "99%"),
+     col = "gray40", cex = 0.8, adj = 0)
+
+# ARL1 marcado
+abline(v = 1/p1, lty = 2, col = "steelblue", lwd = 1)
+abline(v = 1/p2, lty = 2, col = "firebrick",  lwd = 1)
+text(1/p1, 0.05, labels = paste0("ARL₁=", round(1/p1, 2)),
+     col = "steelblue", cex = 0.8, adj = -0.1)
+text(1/p2, 0.15, labels = paste0("ARL₁=", round(1/p2, 2)),
+     col = "firebrick", cex = 0.8, adj = -0.1)
+
+legend("bottomright",
+       legend = c("α = 0.0027 (k=3)", "α = 0.05 (k=1.96)"),
+       col = c("steelblue", "firebrick"),
+       lty = c(1, 2), pch = c(16, 17), lwd = 2, bty = "n")
+
+# Tabla resumen final
+metricas <- data.frame(
+  Metrica  = c("Potencia (1 muestra)", "P(detección en k=4)",
+               "ARL1 (detectar cambio)", "ARL0 (falsa alarma)"),
+  k3       = c("61.32%", "3.55%", "1.63 muestras", "370.37 muestras"),
+  k1.96    = c("92.11%", "0.05%", "1.09 muestras", "20.00 muestras")
+)
+
+colnames(metricas) <- c("Métrica", "α=0.0027 (k=3)", "α=0.05 (k=1.96)")
+
+# Visualizar como tabla gráfica
+library(gridExtra)
+grid.table(metricas)
